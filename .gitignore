@@ -1,0 +1,25 @@
+# Java 编译文件
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE 文件
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# 编译输出
+out/
+build/
+target/
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+*~
+
+# 日志文件
+*.log
