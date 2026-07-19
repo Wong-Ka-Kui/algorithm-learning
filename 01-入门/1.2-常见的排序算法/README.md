@@ -17,6 +17,16 @@
   - [算法描述](#算法描述-3)
   - [复杂度分析](#复杂度分析-3)
   - [核心代码](#核心代码-3)
+  - [算法拓展](#算法拓展)
+    - [小和问题](#小和问题)
+    - [逆序对问题](#逆序对问题)
+    - [右侧小于当前元素的个数](#右侧小于当前元素的个数)
+- [快速排序 (Quick Sort)](#快速排序-quick-sort)
+  - [算法描述](#算法描述-4)
+  - [复杂度分析](#复杂度分析-4)
+  - [核心代码](#核心代码-4)
+  - [算法题](#算法题-1)
+    - [荷兰国旗问题](#荷兰国旗问题)
 - [对数器：如何验证算法正确性](对数器/README.md)
 - [异或交换详解](#异或交换详解)
   - [异或运算的基本性质](#异或运算的基本性质)
@@ -350,6 +360,275 @@ private static void merge(int[] arr, int left, int middle, int right) {
 - ✅ `arr[p0] <= arr[p1]` 中的 `<=` 保证了稳定性
 - ✅ `arr[left + j] = help[j]` 拷贝时要加上 `left` 偏移量
 
+### 算法拓展
+
+#### 小和问题
+
+**题目描述**：
+
+在一个数组中，每一个数左边比当前数小的数累加起来，叫做这个数组的小和。求一个数组的小和。
+
+**例子**：`[1, 3, 4, 2, 5]`
+- 1 左边比 1 小的数：没有
+- 3 左边比 3 小的数：1
+- 4 左边比 4 小的数：1、3
+- 2 左边比 2 小的数：1
+- 5 左边比 5 小的数：1、3、4、2
+
+所以小和为：`1 + 1 + 3 + 1 + 1 + 3 + 4 + 2 = 16`
+
+**解题思路**：
+
+利用归并排序的思想，在合并过程中统计小和。核心是**思路转换**：原问题是"每个数的左边有多少个比它小的数"，可以反过来看成"每个数的右边有多少个比它大的数"。
+
+**代码实现**：
+
+```java
+// 求小和，既可以看某个数左边有几个数字比他小，也可以反过来看右边有几个数字比他大（本题思路）
+public static int smallSum(int[] arr) {
+    // 边界判断
+    if(arr == null || arr.length < 2) {
+        return 0;
+    }
+    return process(arr,0,arr.length-1);
+}
+
+private static int process(int[] arr,int left,int right){
+    if(left == right){
+        return 0;
+    }
+    int middle = left + (right-left)/2;
+    return process(arr, left, middle) + process(arr, middle+1, right) + merge(arr,left,middle,right);
+}
+
+private static int merge(int[] arr,int left,int middle,int right){
+    //在merge的过程中，既排序，也顺便计算小和
+    int i = 0;
+    int p1 = left;
+    int p2 = middle+1;
+    int ans = 0;
+
+    int[] help = new int[right-left+1];
+    while(p1<=middle && p2<=right){
+        // (arr[p1] < arr[p2])?只能是'<'，在等于的时候先让右侧加入help数组，不计算小和
+        // (right-p2+1)*arr[p1]，分别表示右侧大于该数字的个数*该数字 = 本轮添加的小和
+        ans += (arr[p1] < arr[p2])? (right-p2+1)*arr[p1] : 0;
+        help[i++] = (arr[p1] < arr[p2])? arr[p1++] : arr[p2++];
+    }
+    while(p1 <= middle){
+        help[i++] = arr[p1++];
+    }
+    while(p2 <= right){
+        help[i++] = arr[p2++];
+    }
+    //将help数组的答案元素，复制到arr数组中，（只是体现归并排序，在小和问题中其实不一定需要）
+    for(int j=0;j<help.length;j++){
+        arr[left+j] = help[j];
+    }
+    return ans;
+}
+```
+
+**复杂度分析**：
+- **时间复杂度**：O(n log n) - 与归并排序相同
+- **空间复杂度**：O(n) - 辅助数组
+
+#### 逆序对问题
+
+**题目描述**：
+
+在数组中的两个数字，如果前面一个数字大于后面的数字，则这两个数字组成一个逆序对。输入一个数组，求出这个数组中的逆序对的总数。
+
+**例子**：`[7, 5, 6, 4]`
+
+逆序对有：(7,5), (7,6), (7,4), (5,4), (6,4)
+
+逆序对总数：5
+
+**解题思路**：
+
+利用归并排序的思想，在合并过程中统计逆序对。当左半部分的某个数大于右半部分的数时，由于左半部分是有序的，该位置之后的所有元素都会与右半部分的当前元素构成逆序对。
+
+**代码实现**：
+
+```java
+// 求逆序对总数，主要就是当发现arr[p1]>arr[p2]的时候，记录下逆序对个数
+public static int reversePairs(int[] arr) {
+    // 边界判断
+    if(arr == null || arr.length < 2) {
+        return 0;
+    }
+    return process(arr,0,arr.length-1);
+}
+
+private static int process(int[] arr,int left,int right){
+    if(left == right){
+        return 0;
+    }
+    int middle = left + (right-left)/2;
+    return process(arr, left, middle) + process(arr, middle+1, right) + merge(arr,left,middle,right);
+}
+
+private static int merge(int[] arr,int left,int middle,int right){
+    int[] help = new int[right-left+1];
+    int i = 0;
+    int p1 = left;
+    int p2 = middle+1;
+    int ans = 0;
+    while(p1<=middle && p2<=right){
+        if (arr[p1] <= arr[p2]) {
+            // 正常执行归并排序的流程
+            help[i++] = arr[p1++];
+        } else {
+            // 左边 > 右边，发现构成逆序对
+            // 因为左半部分是有序的，arr[p1...middle] 都 > arr[p2]
+            // 所以共有 (middle - p1 + 1) 个逆序对
+            ans += (middle - p1 + 1);
+            help[i++] = arr[p2++];
+        }
+    }
+    while(p1 <= middle){
+        help[i++] = arr[p1++];
+    }
+    while(p2 <= right){
+        help[i++] = arr[p2++];
+    }
+    for(int j=0;j<help.length;j++){
+        arr[left+j] = help[j];
+    }
+    return ans;
+}
+```
+
+**复杂度分析**：
+- **时间复杂度**：O(n log n) - 与归并排序相同
+- **空间复杂度**：O(n) - 辅助数组
+
+#### 右侧小于当前元素的个数
+
+**题目描述**：
+
+给你一个整数数组 `nums`，按要求返回一个新数组 `counts`。数组 `counts` 有该性质：`counts[i]` 的值是 `nums[i]` 右侧小于 `nums[i]` 的元素的数量。
+
+**例子**：`nums = [5, 2, 6, 1]`
+
+输出：`[2, 1, 1, 0]`
+
+解释：
+- 5 的右侧有 2 个更小的元素 (2 和 1)
+- 2 的右侧有 1 个更小的元素 (1)
+- 6 的右侧有 1 个更小的元素 (1)
+- 1 的右侧有 0 个更小的元素
+
+**解题思路**：
+
+这道题需要为每个元素统计其右侧小于它的元素个数，不能简单地返回一个总数。核心思路：
+1. 创建索引数组，记录每个元素的原始位置
+2. 使用归并排序对索引数组排序（按对应元素值排序）
+3. 在合并过程中，当发现右半部分的元素小于左半部分的元素时，累加到对应位置的计数中
+
+**代码实现**：
+
+```java
+public static int[] countSmaller(int[] nums) {
+    if (nums == null || nums.length == 0) {
+        return new int[0];
+    }
+    
+    int n = nums.length;
+    int[] counts = new int[n];  // 存储结果
+    int[] indexes = new int[n]; // 索引数组
+    
+    // 初始化索引数组
+    for (int i = 0; i < n; i++) {
+        indexes[i] = i;
+    }
+    
+    // 归并排序
+    mergeSort(nums, indexes, counts, 0, n - 1);
+    
+    return counts;
+}
+
+private static void mergeSort(int[] nums, int[] indexes, int[] counts, int left, int right) {
+    if (left >= right) {
+        return;
+    }
+    
+    int middle = left + (right - left) / 2;
+    mergeSort(nums, indexes, counts, left, middle);
+    mergeSort(nums, indexes, counts, middle + 1, right);
+    merge(nums, indexes, counts, left, middle, right);
+}
+
+private static void merge(int[] nums, int[] indexes, int[] counts, int left, int middle, int right) {
+    int[] helper = new int[right - left + 1];
+    int i = 0;
+    int p1 = left;
+    int p2 = middle + 1;
+    
+    while (p1 <= middle && p2 <= right) {
+        // 右半部分的元素小于左半部分的元素
+        if (nums[indexes[p2]] < nums[indexes[p1]]) {
+            // 右边有一个更小的元素，对左半部分所有剩余元素都有贡献
+            helper[i++] = indexes[p2++];
+        } else {
+            // 左边元素较小或相等，此时右边已处理的元素都小于当前左边元素
+            // p2 - (middle + 1) 就是右边已经处理过的、比当前左边元素小的个数
+            counts[indexes[p1]] += p2 - (middle + 1);
+            helper[i++] = indexes[p1++];
+        }
+    }
+    
+    // 处理左半部分剩余元素
+    while (p1 <= middle) {
+        // 右边所有元素都已处理过，都比这些剩余的左边元素小
+        counts[indexes[p1]] += p2 - (middle + 1);
+        helper[i++] = indexes[p1++];
+    }
+    
+    // 处理右半部分剩余元素
+    while (p2 <= right) {
+        helper[i++] = indexes[p2++];
+    }
+    
+    // 拷贝回索引数组
+    for (int j = 0; j < helper.length; j++) {
+        indexes[left + j] = helper[j];
+    }
+}
+```
+
+**算法详解**：
+
+1. **索引数组技巧**：
+   - 不直接排序原数组，而是排序索引
+   - `indexes[i]` 表示当前位置对应原数组的哪个索引
+   - 这样可以在排序过程中追踪每个元素的原始位置
+
+2. **关键计数逻辑**：
+   - 当 `nums[indexes[p2]] < nums[indexes[p1]]` 时，右边元素更小，先放入 helper
+   - 当 `nums[indexes[p1]] <= nums[indexes[p2]]` 时，左边元素较小：
+     - 此时右半部分中 `[middle+1, p2-1]` 的元素都已经被处理过
+     - 这些元素都小于 `nums[indexes[p1]]`
+     - 个数为：`p2 - (middle + 1)`
+     - 累加到 `counts[indexes[p1]]`
+
+3. **为什么是 `p2 - (middle + 1)`**：
+   - `p2` 当前指向右半部分待处理位置
+   - `middle + 1` 是右半部分起始位置
+   - `[middle+1, p2-1]` 区间的元素都已被放入 helper，都小于当前左边元素
+   - 区间长度 = `(p2 - 1) - (middle + 1) + 1 = p2 - middle - 1 = p2 - (middle + 1)`
+
+**复杂度分析**：
+- **时间复杂度**：O(n log n) - 归并排序
+- **空间复杂度**：O(n) - 索引数组和辅助数组
+
+**与前两题的对比**：
+- **小和问题**：统计全局总和，一个数字
+- **逆序对问题**：统计全局总数，一个数字
+- **本题**：为每个位置统计个数，返回数组，需要使用索引数组技巧
+
 ---
 
 ## 异或交换详解
@@ -611,6 +890,299 @@ return new int[]{onlyOne, onlyOne ^ eor};
 - **空间复杂度**：O(1) - 只使用了常数个变量
 
 这个算法非常巧妙地利用了异或运算和位运算的特性，在常数空间内解决了问题！
+
+---
+
+## 快速排序 (Quick Sort)
+
+### 算法描述
+
+快速排序是一种高效的**分治算法**，由Tony Hoare于1960年提出。它的核心思想是：选择一个基准元素（pivot），通过一趟排序将数组分为两部分，使得左边部分的元素都小于基准，右边部分的元素都大于基准，然后递归地对左右两部分进行快速排序。
+
+**算法步骤：**
+1. **选择基准（pivot）**：从数组中选择一个元素作为基准（为避免极端情况，通常随机选择）
+2. **分区（partition）**：重新排列数组，使得所有小于基准的元素放在基准左边，所有大于基准的元素放在基准右边
+3. **递归排序**：递归地对基准左边和右边的子数组进行快速排序
+4. **合并**：由于是原地排序，不需要额外的合并步骤
+
+### 复杂度分析
+
+- **时间复杂度**：
+  - 平均情况：O(n log n) - 每次能比较均匀地划分数组
+  - 最坏情况：O(n²) - 每次划分都极度不均（如已排序数组 + 固定选择首元素作为pivot）
+  - **随机选择pivot可以有效避免最坏情况**
+- **空间复杂度**：O(log n) - 递归调用栈的深度
+- **稳定性**：不稳定 - 分区过程中会改变相同元素的相对位置
+
+**为什么随机选择pivot？**
+- 对于已排序或接近有序的数组，固定选择首/尾元素会导致极度不均的划分
+- 随机选择可以将最坏情况的概率降到可忽略的程度
+
+### 核心代码
+
+```java
+import java.util.Random;
+
+public class QuickSort {
+    //为了避免极端数据状况，所以基准值采用随机抽取
+    public static final Random random = new Random();
+    
+    public static void quickSort(int[] arr) {
+        if(arr==null || arr.length<2){
+            return;
+        }
+        //方法重载
+        quickSort(arr,0,arr.length-1);
+    }
+    
+    private static void quickSort(int[] arr,int left,int right){
+        if (left >= right) {
+            return;
+        }
+        int p = partition(arr,left,right);
+        quickSort(arr,left,p-1);
+        quickSort(arr,p+1,right); 
+    }
+    
+    private static int partition(int[] arr,int left,int right){
+        int randomIdx = random.nextInt(right-left+1) + left;
+        int p = arr[randomIdx];
+        swap(arr,left,randomIdx);
+        int i = left + 1;
+        int j = right;
+        while(true){
+            while(i<=j && arr[i]<p){
+                i++;
+            }
+            while(i<=j && arr[j]>p){
+                j--;
+            }
+            //在i>=j的情况下，直接退出，避免交换已经处理好了的元素
+            if(i >= j){
+                break;
+            }
+            swap(arr,i,j);
+            i++;
+            j--;
+        }
+        //将基准放到正确位置
+        swap(arr,left,j);
+        return j;
+    }
+    
+    private static void swap(int[] nums,int i,int j){
+        int temp = nums[i];
+        nums[i] = nums[j];
+        nums[j] = temp;
+    }    
+}
+```
+
+**算法详解：**
+
+1. **partition方法的双指针策略**：
+   - 随机选择一个位置的元素作为pivot，与left位置交换
+   - 使用两个指针 `i`（从左向右）和 `j`（从右向左）进行扫描
+   - `i` 寻找 `>= pivot` 的元素，`j` 寻找 `<= pivot` 的元素
+   - 当两者都找到时交换，继续扫描
+   - 当 `i >= j` 时停止，将pivot与j位置交换，此时j就是pivot的最终位置
+
+2. **关键边界处理**：
+   - `i<=j` 的循环条件防止指针越界
+   - `if(i >= j) break` 避免交换已经正确划分的元素
+   - 最后 `swap(arr,left,j)` 将pivot放到正确位置（j位置及其左边都 <= pivot）
+
+3. **递归范围**：
+   - 左子数组：`[left, p-1]` - pivot左边的元素
+   - 右子数组：`[p+1, right]` - pivot右边的元素
+   - pivot本身已在正确位置，不需要再参与排序
+
+---
+
+**三路快排实现（优化重复元素情况）**：
+
+当数组中存在大量重复元素时，三路快排的效率更高。它将数组划分为三个区域：`< pivot`、`== pivot`、`> pivot`，等于区域不需要再递归处理。
+
+```java
+public class QuickSort3Way {
+    public static final Random random = new Random();
+    
+    public static void quickSort(int[] arr) {
+        if(arr == null || arr.length < 2){
+            return;
+        }
+        quickSort(arr, 0, arr.length - 1);
+    }
+    
+    private static void quickSort(int[] arr, int left, int right) {
+        if(left >= right) {
+            return;
+        }
+        
+        // 随机选择pivot
+        int randomIdx = random.nextInt(right - left + 1) + left;
+        int pivot = arr[randomIdx];
+        
+        // 三路划分，返回等于区域的左右边界
+        int[] range = partition(arr, left, right, pivot);
+        
+        // 递归处理小于区域和大于区域，等于区域不需要处理
+        quickSort(arr, left, range[0] - 1);   // 小于区域
+        quickSort(arr, range[1] + 1, right);   // 大于区域
+    }
+    
+    // 荷兰国旗三路划分，返回等于区域的[左边界, 右边界]
+    private static int[] partition(int[] arr, int left, int right, int pivot) {
+        int less = left - 1;      // 小于区域的右边界
+        int more = right + 1;     // 大于区域的左边界
+        int i = left;             // 当前遍历位置
+        
+        while(i < more) {
+            if(arr[i] < pivot) {
+                // 小于区域
+                swap(arr, i++, ++less);
+            } else if(arr[i] > pivot) {
+                // 大于区域
+                swap(arr, i, --more);
+            } else {
+                // 等于区域
+                i++;
+            }
+        }
+        
+        // 返回等于区域的左右边界
+        return new int[]{less + 1, more - 1};
+    }
+    
+    private static void swap(int[] arr, int i, int j) {
+        int temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+    }
+}
+```
+
+**三路快排的优势**：
+- 对于有大量重复元素的数组，效率显著提高
+- 等于区域不需要递归，减少了递归深度
+- 最坏情况下（所有元素相同）时间复杂度从 O(n²) 降为 O(n)
+
+### 算法题
+
+#### 荷兰国旗问题
+
+**问题描述**：
+
+给定一个数组 `arr` 和一个数 `num`，请把小于 `num` 的数放在数组的左边，等于 `num` 的数放在数组的中间，大于 `num` 的数放在数组的右边。
+
+**要求**：
+- 额外空间复杂度：O(1)
+- 时间复杂度：O(n)
+
+**解题思路**：
+
+这是**三路快排（3-way Quick Sort）**的核心思想。使用三个指针维护三个区域：
+- `left`：小于区域的右边界（初始为 -1，表示小于区域为空）
+- `right`：大于区域的左边界（初始为 arr.length，表示大于区域为空）
+- `i`：当前遍历位置
+
+根据 `arr[i]` 与 `num` 的大小关系，进行不同的操作：
+1. **`arr[i] < num`**：属于小于区域，与 `left+1` 位置交换，`left++`, `i++`
+2. **`arr[i] > num`**：属于大于区域，与 `right-1` 位置交换，`right--`，**i不动**（关键！）
+3. **`arr[i] == num`**：属于等于区域，保持不动，只 `i++`
+
+**为什么大于时i不动？**
+- 因为从右边界交换过来的元素还没有被处理过，需要继续判断它属于哪个区域
+- 而从左边界交换过来的元素是已经处理过的（i扫描过的），所以可以i++
+
+**代码实现**：
+
+```java
+public class DutchNationalFlag {
+
+    public static void partition(int[] arr, int num) {
+        if (arr == null || arr.length < 2) {
+            return;
+        }
+        //三个指针，分别表示左边界，右边界，当前遍历位置
+        int left = -1;
+        int right = arr.length;
+        int i = 0;
+
+        while(i < right){
+            if(arr[i] < num){
+                //小于：左边界和当前指针都右移
+                swap(arr,i,left+1);
+                i++;
+                left++;
+            }else if(arr[i] > num){
+                //大于：只有右边界左移，当前指针不动，因为swap从右边界换来的元素还没有处理
+                swap(arr,i,right-1);
+                right--;
+            }else{
+                //等于：只移动当前指针
+                i++;
+            }
+        }
+    }
+    
+    private static void swap(int[] arr,int i,int j){
+        int temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+    }
+}
+```
+
+**算法详解**：
+
+1. **初始状态**：
+   ```
+   left = -1 (小于区域为空)
+   right = arr.length (大于区域为空)
+   i = 0 (从头开始遍历)
+   
+   [待处理区域: 0 ~ arr.length-1]
+   ```
+
+2. **遍历过程**（以 `[3, 5, 2, 7, 1, 8, 4, 6, 9, 5, 5]`，`num=5` 为例）：
+   ```
+   初始: [3, 5, 2, 7, 1, 8, 4, 6, 9, 5, 5]
+          ^i                            ^right
+   left=-1
+   
+   arr[0]=3 < 5: swap(0, 0), i++, left++
+   [3, 5, 2, 7, 1, 8, 4, 6, 9, 5, 5]
+       ^i  left=0                 ^right
+   
+   arr[1]=5 == 5: i++
+   [3, 5, 2, 7, 1, 8, 4, 6, 9, 5, 5]
+          ^i  left=0              ^right
+   
+   arr[2]=2 < 5: swap(2, 1), i++, left++
+   [3, 2, 5, 7, 1, 8, 4, 6, 9, 5, 5]
+             ^i  left=1           ^right
+   
+   ...继续处理，最终得到：
+   [3, 2, 1, 4, 5, 5, 5, 6, 9, 8, 7]
+    <5区域    =5区域    >5区域
+   ```
+
+3. **循环不变式**：
+   - `[0, left]`：所有元素 < num
+   - `[left+1, i-1]`：所有元素 == num
+   - `[i, right-1]`：待处理区域
+   - `[right, arr.length-1]`：所有元素 > num
+
+4. **与快速排序的关系**：
+   - 荷兰国旗问题是**三路快排**的partition过程
+   - 传统快排将数组分为两部分：`< pivot` 和 `>= pivot`
+   - 三路快排将数组分为三部分：`< pivot`、`== pivot`、`> pivot`
+   - 当数组中有大量重复元素时，三路快排效率更高（等于区域不需要再递归）
+
+**复杂度分析**：
+- **时间复杂度**：O(n) - 遍历数组一次
+- **空间复杂度**：O(1) - 只使用常数个额外变量
 
 ---
 

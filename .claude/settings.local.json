@@ -9,7 +9,14 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(git branch *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(code --list-extensions)",
+      "Bash(mkdir -p .vscode)",
+      "Bash(javac SmallSum.java)",
+      "Bash(java SmallSum)"
+    ],
+    "additionalDirectories": [
+      "D:\\coder"
     ]
   }
 }
