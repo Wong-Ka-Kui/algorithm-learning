@@ -74,12 +74,6 @@ public class RadixSort {
         return ((num / ((int) Math.pow(10, d - 1))) % 10);
     }
 
-    private static void swap(int[] arr, int i, int j) {
-        arr[i] = arr[i] ^ arr[j];
-        arr[j] = arr[i] ^ arr[j];
-        arr[i] = arr[i] ^ arr[j];
-    }
-
     // 测试方法
     public static void main(String[] args) {
         int[] arr = {170, 45, 75, 90, 802, 24, 2, 66};
